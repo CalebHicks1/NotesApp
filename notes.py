@@ -9,7 +9,7 @@ import os
 import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('AppIndicator3', '0.1')
-from gi.repository import Gtk as gtk, AppIndicator3 as appindicator
+from gi.repository import Gtk as gtk, AppIndicator3 as appindicator, Pango as pango
 
 # Initialize some constants
 indicator = appindicator.Indicator.new("customtray", "semi-starred-symbolic", appindicator.IndicatorCategory.APPLICATION_STATUS)
@@ -38,16 +38,21 @@ def main():
 
 # Sets up the menu and restores the saved notes.
 def menu():
+    main_menu = gtk.Menu()
     command_one = gtk.MenuItem(label='New Note...')
+    main_menu.append(command_one)
+    note_menu = gtk.MenuItem(label='Notes')
+    note_menu.set_submenu(notes)
+    main_menu.append(note_menu)
     command_one.connect('activate', new_note)
-    notes.append(command_one)
     if current_notes:
         for note in current_notes:
             notes_submenu = gtk.Menu()
             restore_note(note)
-    notes.append(exittray)
+    main_menu.append(exittray)
     notes.show_all()
-    return notes
+    main_menu.show_all()
+    return main_menu
 
 # Restores the existing notes
 def restore_note(note):
@@ -89,12 +94,14 @@ class StickyNote(gtk.Window):
         open_notes.append(self)
         self.label = label
         self.text = gtk.TextView()
-        self.label_box = gtk.Entry()
+        self.label_box = gtk.Entry() #The entry for the label
+
+        # Style the font margins
         self.label_box.set_alignment(xalign=0.5)
         self.label_box.set_text(self.label)
         self.label_box.set_has_frame(False)
-        #self.label_box.gtk_entry_set_text('label')
-        # Style
+        self.label_box.modify_font(pango.FontDescription('bold 15'))
+
         self.text.set_left_margin(10)
         self.text.set_right_margin(10)
         self.text.set_top_margin(10)
@@ -126,14 +133,13 @@ class StickyNote(gtk.Window):
             text_file = open(self.label+'.txt','w')
             text_file.write(text)
             text_file.close()
-            open_notes.remove(self)
         else:
             if os.path.exists(self.label+'.txt'):
                 os.remove(self.label+'.txt')
             remove_note_label(self.label)
         print('Closing note:'+self.label)
         save_notes()
-        gtk.main_quit()
+        self.destroy()
 
 # Removes the note with the given name from the system tray menu.
 def remove_note_label(name):
@@ -142,7 +148,6 @@ def remove_note_label(name):
     for note in notes:
         if (note.get_label()) == name:
             notes.remove(note)
-    save_notes()
 
 # Responsible for changing the name of the note if the label was changed.
 def change_note_label(self, new_label):
@@ -160,13 +165,12 @@ def save_notes():
     text_file = open('note_titles.txt', 'w')
     text_file.write(str(current_notes))
     text_file.close()
-    notes.remove(exittray)
-    notes.append(exittray)
     notes.show_all()
 
 # Method called when the quit  button is clicked.
 def clicked_quit(self):
     for note in open_notes:
+        open_notes.remove(note)
         note.quit()
     print('\nQuit')
     gtk.main_quit()
