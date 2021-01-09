@@ -84,7 +84,6 @@ def make_stickynote(self):
     note = StickyNote(label)
     note.connect("destroy", StickyNote.quit)
     note.show_all()
-    gtk.main()
 
 # The class to act as a sticky note. Takes care of styling and saving
 # the note contents.
@@ -100,12 +99,13 @@ class StickyNote(gtk.Window):
         self.label_box.set_alignment(xalign=0.5)
         self.label_box.set_text(self.label)
         self.label_box.set_has_frame(False)
-        self.label_box.modify_font(pango.FontDescription('bold 15'))
+        self.label_box.override_font(pango.FontDescription('bold 15'))
 
         self.text.set_left_margin(10)
         self.text.set_right_margin(10)
         self.text.set_top_margin(10)
         self.text.set_wrap_mode(gtk.WrapMode(2))
+        self.text.grab_focus()
         self.resize(300,300)
         # Keep track of text
         self.buffer = self.text.get_buffer()
@@ -137,6 +137,7 @@ class StickyNote(gtk.Window):
             if os.path.exists(self.label+'.txt'):
                 os.remove(self.label+'.txt')
             remove_note_label(self.label)
+        open_notes.remove(self)
         print('Closing note:'+self.label)
         save_notes()
         self.destroy()
@@ -170,9 +171,8 @@ def save_notes():
 # Method called when the quit  button is clicked.
 def clicked_quit(self):
     for note in open_notes:
-        open_notes.remove(note)
         note.quit()
-    print('\nQuit')
+    print('Quit')
     gtk.main_quit()
 
 if __name__ == "__main__":
