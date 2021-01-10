@@ -12,7 +12,7 @@ gi.require_version('AppIndicator3', '0.1')
 from gi.repository import Gtk as gtk, AppIndicator3 as appindicator, Pango as pango
 
 # Initialize some constants
-indicator = appindicator.Indicator.new("customtray", "semi-starred-symbolic", appindicator.IndicatorCategory.APPLICATION_STATUS)
+indicator = appindicator.Indicator.new("customtray", os.path.abspath('noteicon.svg'), appindicator.IndicatorCategory.APPLICATION_STATUS)
 notes = gtk.Menu()
 exittray = gtk.MenuItem(label='Quit')
 
@@ -105,7 +105,6 @@ class StickyNote(gtk.Window):
         self.text.set_right_margin(10)
         self.text.set_top_margin(10)
         self.text.set_wrap_mode(gtk.WrapMode(2))
-        self.text.grab_focus()
         self.resize(300,300)
         # Keep track of text
         self.buffer = self.text.get_buffer()
@@ -119,6 +118,7 @@ class StickyNote(gtk.Window):
         self.box.pack_start(self.label_box, expand=False, fill=False,padding=0)
         self.box.pack_end(self.text, expand=True, fill=True,padding=0)
         self.add(self.box)
+        self.set_icon_from_file('icon.png')
     # Called when the quit button is clicked. Saves the note,
     # and deletes it if the note is blank.
     def quit(self):
