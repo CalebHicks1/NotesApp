@@ -12,7 +12,7 @@ gi.require_version('AppIndicator3', '0.1')
 from gi.repository import Gtk as gtk, AppIndicator3 as appindicator, Pango as pango
 
 # Initialize some constants
-indicator = appindicator.Indicator.new("customtray", os.path.abspath('noteicon.svg'), appindicator.IndicatorCategory.APPLICATION_STATUS)
+indicator = appindicator.Indicator.new("customtray", os.path.abspath('Icon.svg'), appindicator.IndicatorCategory.APPLICATION_STATUS)
 notes = gtk.Menu()
 exittray = gtk.MenuItem(label='Quit')
 
@@ -95,12 +95,11 @@ class StickyNote(gtk.Window):
         self.text = gtk.TextView()
         self.label_box = gtk.Entry() #The entry for the label
 
-        # Style the font margins
+        # Set the font margins and other style
         self.label_box.set_alignment(xalign=0.5)
         self.label_box.set_text(self.label)
         self.label_box.set_has_frame(False)
         self.label_box.override_font(pango.FontDescription('bold 15'))
-
         self.text.set_left_margin(10)
         self.text.set_right_margin(10)
         self.text.set_top_margin(10)
@@ -108,17 +107,26 @@ class StickyNote(gtk.Window):
         self.resize(300,300)
         # Keep track of text
         self.buffer = self.text.get_buffer()
+        self.box = gtk.VBox(homogeneous=False, spacing=0)
+        self.box.pack_start(self.label_box, expand=False, fill=False,padding=0)
+        self.text_box = gtk.VBox(homogeneous=False, spacing=0)
+        self.text_box.pack_end(self.text, expand=True, fill=True,padding=0)
+        self.box.pack_end(self.text_box, expand=True, fill=True,padding=0)
+        self.add(self.box)
+        self.set_icon_from_file('icon.png')
         try:
+            # Read text from the saved file.
             text_file = open(self.label+'.txt','r')
             self.buffer.set_text(text_file.read())
             text_file.close()
+            # Put focus on text box, remove highlighting from label_box
+            self.label_box.select_region(0,0)
+            self.text_box.set_property('can-focus',True)
+            self.text_box.grab_focus()
+            self.text.grab_focus()
         except:
             pass
-        self.box = gtk.VBox(homogeneous=False, spacing=0)
-        self.box.pack_start(self.label_box, expand=False, fill=False,padding=0)
-        self.box.pack_end(self.text, expand=True, fill=True,padding=0)
-        self.add(self.box)
-        self.set_icon_from_file('icon.png')
+
     # Called when the quit button is clicked. Saves the note,
     # and deletes it if the note is blank.
     def quit(self):
@@ -129,6 +137,7 @@ class StickyNote(gtk.Window):
                 os.remove(self.label+'.txt')
             remove_note_label(self.label)
             change_note_label(self, self.label_box.get_text())
+        # if there is any text in the file, save it. Otherwise remove the file.
         if text:
             text_file = open(self.label+'.txt','w')
             text_file.write(text)
@@ -150,7 +159,7 @@ def remove_note_label(name):
         if (note.get_label()) == name:
             notes.remove(note)
 
-# Responsible for changing the name of the note if the label was changed.
+# Changes the name of the note to the new label.
 def change_note_label(self, new_label):
     self.label = new_label
     new_note = gtk.MenuItem(label=new_label)
@@ -160,7 +169,7 @@ def change_note_label(self, new_label):
     notes.show_all()
     save_notes()
 
-# Saves the labels when they are added.
+# Saves the labels in the menu to a file.
 def save_notes():
     print('saved!')
     text_file = open('note_titles.txt', 'w')
