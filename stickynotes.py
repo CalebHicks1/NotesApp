@@ -7,24 +7,27 @@ By Caleb Hicks
 
 import os
 import gi
+import sys
 gi.require_version('Gtk', '3.0')
 gi.require_version('AppIndicator3', '0.1')
 from gi.repository import Gtk as gtk, AppIndicator3 as appindicator, Pango as pango
 
 # Initialize some constants
-indicator = appindicator.Indicator.new("customtray", os.path.abspath('Icon.svg'), appindicator.IndicatorCategory.APPLICATION_STATUS)
+indicator = appindicator.Indicator.new("customtray", os.path.abspath(sys._MEIPASS+'/icon.png'), appindicator.IndicatorCategory.APPLICATION_STATUS)
 notes = gtk.Menu()
 exittray = gtk.MenuItem(label='Quit')
 
 # Read the existing notes from file
 import ast # Used to read string as a list
+if not os.path.exists(os.path.expanduser('~/.stickynotes')):
+    os.mkdir(os.path.expanduser('~/.stickynotes'))
 try:
-    text_file = open('note_titles.txt', 'r') # reads the saved note titles
+    text_file = open(os.path.expanduser('~/.stickynotes/note_titles.txt'), 'r') # reads the saved note titles
 except:
-    text_file = open('note_titles.txt', 'w') # Creates the file if it doesn't exist.
+    text_file = open(os.path.expanduser('~/.stickynotes/note_titles.txt'), 'w') # Creates the file if it doesn't exist.
     text_file.write('[]')
     text_file.close()
-    text_file = open('note_titles.txt', 'r')
+    text_file = open(os.path.expanduser('~/.stickynotes/note_titles.txt'), 'r')
 
 current_notes = ast.literal_eval(text_file.read()) # Reads the string as a list.
 text_file.close()
@@ -80,10 +83,17 @@ def new_note(self):
 
 # Makes a new sticky note, using the label of the note in the tray.
 def make_stickynote(self):
-    label = self.get_label()
-    note = StickyNote(label)
-    note.connect("destroy", StickyNote.quit)
-    note.show_all()
+    already_open = False
+    for note in open_notes:
+        if note.label == self.get_label():
+            note.present()
+            already_open = True
+    if not already_open:
+        label = self.get_label()
+        note = StickyNote(label)
+        note.connect("destroy", StickyNote.quit)
+        note.show_all()
+        note.present()
 
 # The class to act as a sticky note. Takes care of styling and saving
 # the note contents.
@@ -113,10 +123,10 @@ class StickyNote(gtk.Window):
         self.text_box.pack_end(self.text, expand=True, fill=True,padding=0)
         self.box.pack_end(self.text_box, expand=True, fill=True,padding=0)
         self.add(self.box)
-        self.set_icon_from_file('icon.png')
+        self.set_icon_from_file(os.path.abspath(sys._MEIPASS+'/icon.png'));
         try:
             # Read text from the saved file.
-            text_file = open(self.label+'.txt','r')
+            text_file = open(os.path.expanduser('~/.stickynotes/')+self.label+'.txt','r')
             self.buffer.set_text(text_file.read())
             text_file.close()
             # Put focus on text box, remove highlighting from label_box
@@ -133,18 +143,18 @@ class StickyNote(gtk.Window):
         bounds = self.buffer.get_bounds()
         text = self.buffer.get_text(bounds[0],bounds[1],False)
         if self.label_box.get_text() != self.label and self.label_box.get_text() !="":
-            if os.path.exists(self.label+'.txt'):
-                os.remove(self.label+'.txt')
+            if os.path.exists(os.path.expanduser('~/.stickynotes/')+self.label+'.txt'):
+                os.remove(os.path.expanduser('~/.stickynotes/')+self.label+'.txt')
             remove_note_label(self.label)
             change_note_label(self, self.label_box.get_text())
         # if there is any text in the file, save it. Otherwise remove the file.
         if text:
-            text_file = open(self.label+'.txt','w')
+            text_file = open(os.path.expanduser('~/.stickynotes/')+self.label+'.txt','w')
             text_file.write(text)
             text_file.close()
         else:
-            if os.path.exists(self.label+'.txt'):
-                os.remove(self.label+'.txt')
+            if os.path.exists(os.path.expanduser('~/.stickynotes/')+self.label+'.txt'):
+                os.remove(os.path.expanduser('~/.stickynotes/')+self.label+'.txt')
             remove_note_label(self.label)
         open_notes.remove(self)
         print('Closing note:'+self.label)
@@ -172,7 +182,7 @@ def change_note_label(self, new_label):
 # Saves the labels in the menu to a file.
 def save_notes():
     print('saved!')
-    text_file = open('note_titles.txt', 'w')
+    text_file = open(os.path.expanduser('~/.stickynotes/note_titles.txt'), 'w')
     text_file.write(str(current_notes))
     text_file.close()
     notes.show_all()
